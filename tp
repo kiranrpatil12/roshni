@@ -1,0 +1,31 @@
+# Centos base images
+FROM centos:latest
+
+RUN cd /etc/yum.repos.d/
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+RUN sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+RUN yum -y update && yum -y install \
+    httpd \
+    mod_ssl \
+    ca-certificates
+# Copy the index.html file
+COPY ./index.html /var/www/html/
+
+# Copy the certificate which will be used by the application
+COPY ./kiran.crt /etc/pki/tls/certs/localhost.crt
+
+# Copy the key which will be used by the application
+COPY  ./kiran.key /etc/pki/tls/private/localhost.key
+
+# Copy the CA certificate
+COPY ./RootCA.crt /usr/local/share/ca-certificates/RootCA.crt
+
+RUN chmod 644 /usr/local/share/ca-certificates/RootCA.crt
+
+RUN chmod 0710 /etc/pki/tls/private/localhost.key 
+
+COPY ./RootCA.crt /etc/pki/ca-trust/source/anchors/
+
+EXPOSE 443
+
+CMD ["httpd", "-D", "FOREGROUND"]
